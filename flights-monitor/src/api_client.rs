@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use reqwest::{Client, header};
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Deserializer, Serialize};
+use std::result::Result;
 
 const SEARCH_BASE_URL: &str = "https://api.tequila.kiwi.com/v2/search";
 
@@ -11,7 +12,6 @@ pub struct FlightsQuery {
     pub fly_to: String,
     pub date_from: DateTime<Utc>,
     pub date_to: DateTime<Utc>,
-    pub budget: usize,
     pub nights_in_dst_from: usize,
     pub nights_in_dst_to: usize,
     pub max_stopovers: usize,
@@ -19,13 +19,13 @@ pub struct FlightsQuery {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct FlightsResponse {
-    pub data: Vec<Flight>,
+    pub data: Vec<Trip>,
     #[serde(rename = "_results")]
     pub results: i32,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Flight {
+pub struct Trip {
     #[serde(rename = "flyFrom")]
     pub fly_from: String,
     #[serde(rename = "flyTo")]
@@ -34,12 +34,38 @@ pub struct Flight {
     pub city_from: String,
     #[serde(rename = "cityTo")]
     pub city_to: String,
+    #[serde(rename = "cityCodeTo")]
+    pub city_code_to: String,
+    #[serde(rename = "countryTo")]
+    pub country_to: Country,
     pub price: f64,
+    pub route: Vec<TripRouteFlight>,
+    #[serde(rename = "nightsInDest")]
+    pub length_in_nights: usize,
+    pub deep_link: String,
+}
+
+impl Trip {
+    pub fn utc_departure(&self) -> DateTime<Utc> {
+        return self.route[0].utc_departure;
+    }
+    pub fn utc_return(&self) -> DateTime<Utc> {
+        return self.route[self.route.len() - 1].utc_departure;
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct TripRouteFlight {
     #[serde(deserialize_with = "deserialize_date")]
     pub utc_arrival: DateTime<Utc>,
     #[serde(deserialize_with = "deserialize_date")]
     pub utc_departure: DateTime<Utc>,
-    pub deep_link: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Country {
+    pub code: String,
+    pub name: String,
 }
 
 fn deserialize_date<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
@@ -52,8 +78,12 @@ fn deserialize_date<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
         .map_err(serde::de::Error::custom)
 }
 
-pub async fn search_flights(query: FlightsQuery)
+pub async fn search_flights(api_key: String, query: FlightsQuery)
                             -> Result<FlightsResponse, Box<dyn std::error::Error>> {
+    let mut headers = HeaderMap::new();
+    headers.insert("apikey", header::HeaderValue::from_str(&api_key)?);
+    headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
+
     let json_response = Client::builder()
         .build()?
         .get(SEARCH_BASE_URL)
@@ -63,24 +93,17 @@ pub async fn search_flights(query: FlightsQuery)
             ("fly_from", query.fly_from),
             ("fly_to", query.fly_to),
             ("max_stopovers", query.max_stopovers.to_string()),
-            ("price_to", query.budget.to_string()),
             ("nights_in_dst_from", query.nights_in_dst_from.to_string()),
             ("nights_in_dst_to", query.nights_in_dst_to.to_string()),
+            ("limit", 1000.to_string()),
+            ("sort", "price".to_string())
         ])
-        .headers(get_mandatory_headers())
+        .headers(headers)
         .send().await?
         .text().await?;
 
     let response: FlightsResponse = serde_json::from_str(&json_response)?;
 
     return Ok(response);
-}
-
-fn get_mandatory_headers() -> HeaderMap {
-    let mut headers = header::HeaderMap::new();
-    headers.insert("apikey", header::HeaderValue::from_static("todo: add here"));
-    headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
-
-    return headers;
 }
 
