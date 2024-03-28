@@ -31,7 +31,7 @@ diesel::table! {
         price -> Nullable<Int2>,
         airline -> Nullable<Text>,
         trip_type -> Nullable<Int2>,
-        inserted_at -> Nullable<Date>,
+        inserted_at -> Nullable<Timestamp>,
         city_code -> Nullable<Text>,
         city_name -> Nullable<Text>,
     }

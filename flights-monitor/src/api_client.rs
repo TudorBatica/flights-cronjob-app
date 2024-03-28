@@ -78,10 +78,10 @@ fn deserialize_date<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
         .map_err(serde::de::Error::custom)
 }
 
-pub async fn search_flights(api_key: String, query: FlightsQuery)
+pub async fn search_flights(api_key: &str, query: FlightsQuery)
                             -> Result<FlightsResponse, Box<dyn std::error::Error>> {
     let mut headers = HeaderMap::new();
-    headers.insert("apikey", header::HeaderValue::from_str(&api_key)?);
+    headers.insert("apikey", api_key.parse().unwrap());
     headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
 
     let json_response = Client::builder()

@@ -83,6 +83,6 @@ pub struct NewTrip {
     pub price: i16,
     pub airline: String,
     pub trip_type: i16,
-    pub inserted_at: chrono::NaiveDate,
+    pub inserted_at: chrono::NaiveDateTime,
 }
 
