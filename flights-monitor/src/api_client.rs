@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
-use reqwest::{Client, header};
 use reqwest::header::HeaderMap;
+use reqwest::{header, Client};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::result::Result;
 
@@ -69,8 +69,8 @@ pub struct Country {
 }
 
 fn deserialize_date<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
-    where
-        D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     let date_str = String::deserialize(deserializer)?;
     DateTime::parse_from_rfc3339(&date_str)
@@ -78,11 +78,16 @@ fn deserialize_date<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
         .map_err(serde::de::Error::custom)
 }
 
-pub async fn search_flights(api_key: &str, query: FlightsQuery)
-                            -> Result<FlightsResponse, Box<dyn std::error::Error>> {
+pub async fn search_flights(
+    api_key: &str,
+    query: FlightsQuery,
+) -> Result<FlightsResponse, Box<dyn std::error::Error>> {
     let mut headers = HeaderMap::new();
     headers.insert("apikey", api_key.parse().unwrap());
-    headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
+    headers.insert(
+        "Content-Type",
+        header::HeaderValue::from_static("application/json"),
+    );
 
     let json_response = Client::builder()
         .build()?
@@ -96,14 +101,15 @@ pub async fn search_flights(api_key: &str, query: FlightsQuery)
             ("nights_in_dst_from", query.nights_in_dst_from.to_string()),
             ("nights_in_dst_to", query.nights_in_dst_to.to_string()),
             ("limit", 1000.to_string()),
-            ("sort", "price".to_string())
+            ("sort", "price".to_string()),
         ])
         .headers(headers)
-        .send().await?
-        .text().await?;
+        .send()
+        .await?
+        .text()
+        .await?;
 
     let response: FlightsResponse = serde_json::from_str(&json_response)?;
 
     return Ok(response);
 }
-

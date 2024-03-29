@@ -85,4 +85,3 @@ pub struct NewTrip {
     pub trip_type: i16,
     pub inserted_at: chrono::NaiveDateTime,
 }
-
