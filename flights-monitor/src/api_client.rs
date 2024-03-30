@@ -103,8 +103,10 @@ pub async fn search_flights(
             ("limit", 1000.to_string()),
             ("sort", "price".to_string()),
         ])
-        .headers(headers).send()
-        .await?.text()
+        .headers(headers)
+        .send()
+        .await?
+        .text()
         .await?;
 
     let response: FlightsResponse = serde_json::from_str(&json_response)?;
