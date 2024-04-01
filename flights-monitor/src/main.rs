@@ -58,7 +58,7 @@ async fn insert_new_trips(
         fly_from: route.airport_code.clone(),
         fly_to: route.country_code.clone(),
         date_from: Utc::now(),
-        date_to: date_to.clone(),
+        date_to,
         nights_in_dst_from: 2,
         nights_in_dst_to: 7,
         max_stopovers: 0,
@@ -70,7 +70,7 @@ async fn insert_new_trips(
         .filter(|trip| is_week_long_trip(trip) || is_weekend_getaway(trip))
         .map(|trip| {
             let trip_type_value = if is_weekend_getaway(&trip) { 1 } else { 2 };
-            return NewTrip {
+            NewTrip {
                 airport_code: trip.fly_from.clone(),
                 country_code: trip.country_to.code.clone(),
                 city_code: trip.city_code_to.clone(),
@@ -80,8 +80,8 @@ async fn insert_new_trips(
                 price: trip.price as i16,
                 airline: "placeholder-for-now".to_string(),
                 trip_type: trip_type_value,
-                inserted_at: now.clone(),
-            };
+                inserted_at: now,
+            }
         })
         .collect();
 
@@ -98,13 +98,13 @@ fn delete_old_trips(conn: &mut PgConnection, date_before: NaiveDateTime) {
 }
 
 fn is_week_long_trip(trip: &api_client::Trip) -> bool {
-    return trip.length_in_nights >= 4;
+    trip.length_in_nights >= 4
 }
 
 fn is_weekend_getaway(trip: &api_client::Trip) -> bool {
-    return trip.length_in_nights <= 3
+    trip.length_in_nights <= 3
         && (trip.utc_departure().weekday() == Weekday::Fri
             || trip.utc_departure().weekday() == Weekday::Sat)
         && (trip.utc_return().weekday() == Weekday::Sun
-            || trip.utc_return().weekday() == Weekday::Mon);
+            || trip.utc_return().weekday() == Weekday::Mon)
 }

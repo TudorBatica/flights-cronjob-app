@@ -47,10 +47,10 @@ pub struct Trip {
 
 impl Trip {
     pub fn utc_departure(&self) -> DateTime<Utc> {
-        return self.route[0].utc_departure;
+        self.route[0].utc_departure
     }
     pub fn utc_return(&self) -> DateTime<Utc> {
-        return self.route[self.route.len() - 1].utc_departure;
+        self.route[self.route.len() - 1].utc_departure
     }
 }
 
@@ -111,5 +111,5 @@ pub async fn search_flights(
 
     let response: FlightsResponse = serde_json::from_str(&json_response)?;
 
-    return Ok(response);
+    Ok(response)
 }
