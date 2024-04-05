@@ -1,0 +1,18 @@
+[package]
+name = "flights-web"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "flights-web"
+
+[dependencies]
+actix-web = "4.5.1"
+tokio.workspace = true
+
+[dev-dependencies]
+reqwest.workspace = true

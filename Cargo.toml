@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "flights-data",
+    "flights-monitor",
+    "flights-web"
+]
+resolver = "2"
+
+[workspace.dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12.2", features = ["json"] }
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = "1.0.114"
+tokio = { version = "1.37", features = ["full"] }
