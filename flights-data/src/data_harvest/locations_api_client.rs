@@ -1,5 +1,5 @@
+use reqwest::{Client, header};
 use reqwest::header::HeaderMap;
-use reqwest::{header, Client};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -19,12 +19,10 @@ pub struct AirportsResponse {
 
 pub async fn fetch_airports(
     search_after: Option<Vec<Value>>,
+    api_key: &str,
 ) -> Result<AirportsResponse, Box<dyn std::error::Error>> {
     let mut headers = HeaderMap::new();
-    headers.insert(
-        "apikey",
-        "api-key-here".parse().unwrap(),
-    );
+    headers.insert("apikey", api_key.parse().unwrap());
     headers.insert(
         "Content-Type",
         header::HeaderValue::from_static("application/json"),

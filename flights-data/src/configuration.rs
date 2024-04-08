@@ -1,6 +1,7 @@
 #[derive(serde::Deserialize)]
 pub struct Settings {
     pub database: DbConfig,
+    pub kiwi_api_key: String,
 }
 
 #[derive(serde::Deserialize)]
@@ -22,8 +23,14 @@ impl DbConfig {
 }
 
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
+    dotenvy::dotenv().ok();
+
     let config_file = config::File::with_name("config.yaml");
-    let config = config::Config::builder().add_source(config_file).build()?;
+    let env = config::Environment::with_prefix("FLIGHTS");
+    let config = config::Config::builder()
+        .add_source(config_file)
+        .add_source(env)
+        .build()?;
 
     config.try_deserialize()
 }

@@ -1,3 +1,4 @@
+use crate::configuration::Settings;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::{DirEntry, File};
@@ -5,9 +6,9 @@ use std::io::Write;
 
 /// Harvests data from third party APIs and creates `.sql` files for it to be
 /// stored in the database.
-pub async fn run() {
+pub async fn run(settings: &Settings) {
     let harvests = HashMap::from([("002_add_airports.sql", || {
-        add_airports("./migrations/002_add_airports.sql")
+        add_airports("./migrations/002_add_airports.sql", settings)
     })]);
 
     let existing_sql_files: Vec<String> = fs::read_dir("./migrations/")
@@ -28,11 +29,14 @@ pub async fn run() {
     }
 }
 
-async fn add_airports(sql_file_name: &str) {
+async fn add_airports(sql_file_name: &str, settings: &Settings) {
     let mut insert_query = String::from("INSERT INTO airports VALUES ");
     let mut search_after = None;
     loop {
-        let response = super::locations_api_client::fetch_airports(search_after).await.unwrap();
+        let response =
+            super::locations_api_client::fetch_airports(search_after, &settings.kiwi_api_key)
+                .await
+                .unwrap();
 
         let insert_response_query = response
             .locations

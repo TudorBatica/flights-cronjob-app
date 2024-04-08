@@ -4,3 +4,5 @@ database:
   username: "flights.user"
   password: "flights.pass"
   database_name: "flights.db"
+
+kiwi_api_key: ${FLIGHTS_KIWI_API_KEY}
