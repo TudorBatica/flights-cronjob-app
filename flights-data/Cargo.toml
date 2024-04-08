@@ -9,7 +9,9 @@ edition = "2021"
 chrono.workspace = true
 config.workspace = true
 tokio.workspace = true
+reqwest.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 
 [dependencies.sqlx]
 version = "0.7.4"
