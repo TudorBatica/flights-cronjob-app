@@ -1,8 +1,8 @@
 database:
   host: "127.0.0.1"
   port: 5432
-  username: "flights.user"
-  password: "flights.pass"
-  database_name: "flights.db"
+  username: ${FLIGHTS_DB_USER}
+  password: ${FLIGHTS_DB_PASS}
+  database_name: ${FLIGHTS_DB_NAME}
 
 kiwi_api_key: ${FLIGHTS_KIWI_API_KEY}
