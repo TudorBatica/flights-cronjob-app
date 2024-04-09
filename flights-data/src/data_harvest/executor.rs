@@ -1,15 +1,17 @@
-use crate::configuration::Settings;
-use std::collections::HashMap;
 use std::fs;
 use std::fs::{DirEntry, File};
 use std::io::Write;
 
-/// Harvests data from third party APIs and creates `.sql` files for it to be
+use crate::configuration::Settings;
+use crate::data_harvest::locations_api_client::{fetch_locations, LocationType};
+
+/// Harvests data from third party APIs and generates `.sql` files for it to be
 /// stored in the database.
 pub async fn run(settings: &Settings) {
-    let harvests = HashMap::from([("002_add_airports.sql", || {
-        add_airports("./migrations/002_add_airports.sql", settings)
-    })]);
+    let files_to_generate = vec![
+        "002_add_airports.sql",
+        "003_add_countries.sql",
+    ];
 
     let existing_sql_files: Vec<String> = fs::read_dir("./migrations/")
         .unwrap()
@@ -18,32 +20,38 @@ pub async fn run(settings: &Settings) {
         .filter_map(|dir_entry| get_name_if_sql(dir_entry))
         .collect();
 
-    let unexecuted = harvests
-        .iter()
-        .filter(|(sql_file, _)| !existing_sql_files.contains(&sql_file.to_string()))
-        .collect::<HashMap<_, _>>();
+    let unexecuted = files_to_generate.iter()
+        .filter(|file| !existing_sql_files.contains(&file.to_string()))
+        .collect::<Vec<&&str>>();
 
-    for (sql_file, function) in unexecuted {
-        println!("Creating {} ...", sql_file);
-        function().await;
+    for new_harvest in unexecuted {
+        match new_harvest {
+            &"002_add_airports.sql" => add_airports("./migrations/002_add_airports.sql", settings).await,
+            &"003_add_countries.sql" => add_countries("./migrations/003_add_countries.sql", settings).await,
+            _ => { panic!("No handler for {}", new_harvest) }
+        }
     }
 }
 
-async fn add_airports(sql_file_name: &str, settings: &Settings) {
-    let mut insert_query = String::from("INSERT INTO airports VALUES ");
+async fn add_locations(location_type: LocationType, sql_file_name: &str, settings: &Settings) {
+    let table = match location_type {
+        LocationType::Airport => { "airports" }
+        LocationType::Country => { "countries" }
+    };
+
+    let mut insert_query = format!("INSERT INTO {} VALUES ", table);
     let mut search_after = None;
     loop {
-        let response =
-            super::locations_api_client::fetch_airports(search_after, &settings.kiwi_api_key)
-                .await
-                .unwrap();
+        let response = fetch_locations(&location_type, search_after, &settings.kiwi_api_key)
+            .await
+            .unwrap();
 
         let insert_response_query = response
             .locations
             .into_iter()
-            .map(|airport| {
-                let escaped_name = airport.name.replace("'", "''");
-                format!("('{}', '{}')", airport.code, escaped_name)
+            .map(|location| {
+                let escaped_name = location.name.replace("'", "''");
+                format!("('{}', '{}')", location.code, escaped_name)
             })
             .collect::<Vec<_>>()
             .join(", ");
@@ -54,12 +62,20 @@ async fn add_airports(sql_file_name: &str, settings: &Settings) {
         }
         search_after = response.search_after;
     }
-    insert_query.push_str(";COMMIT;");
+    insert_query.push_str(";");
 
     File::create(sql_file_name)
         .unwrap()
         .write_all(insert_query.as_bytes())
         .unwrap();
+}
+
+async fn add_airports(sql_file_name: &str, settings: &Settings) {
+    add_locations(LocationType::Airport, sql_file_name, settings).await;
+}
+
+async fn add_countries(sql_file_name: &str, settings: &Settings) {
+    add_locations(LocationType::Country, sql_file_name, settings).await;
 }
 
 fn get_name_if_sql(dir_entry: DirEntry) -> Option<String> {

@@ -11,8 +11,6 @@ mod data_harvest {
 async fn main() {
     let configuration = configuration::get_configuration().unwrap();
 
-    println!("{}", configuration.kiwi_api_key);
-
     data_harvest::executor::run(&configuration).await;
 
     let pool = PgPoolOptions::new()

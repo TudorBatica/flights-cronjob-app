@@ -6,21 +6,28 @@ use serde_json::Value;
 const BASE_URL: &str = "https://api.tequila.kiwi.com/locations/dump";
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct Airport {
+pub struct Location {
     pub code: String,
     pub name: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct AirportsResponse {
-    pub locations: Vec<Airport>,
+pub struct LocationsResponse {
+    pub locations: Vec<Location>,
     pub search_after: Option<Vec<Value>>,
 }
 
-pub async fn fetch_airports(
+#[derive(Debug)]
+pub enum LocationType {
+    Airport,
+    Country,
+}
+
+pub async fn fetch_locations(
+    location_type: &LocationType,
     search_after: Option<Vec<Value>>,
     api_key: &str,
-) -> Result<AirportsResponse, Box<dyn std::error::Error>> {
+) -> Result<LocationsResponse, Box<dyn std::error::Error>> {
     let mut headers = HeaderMap::new();
     headers.insert("apikey", api_key.parse().unwrap());
     headers.insert(
@@ -28,10 +35,14 @@ pub async fn fetch_airports(
         header::HeaderValue::from_static("application/json"),
     );
 
+    let location_type = match location_type {
+        LocationType::Airport => "airport".to_string(),
+        LocationType::Country => "country".to_string()
+    };
+
     let mut query_params = vec![
-        ("location_types", "airport".to_string()),
+        ("location_types", location_type),
         ("locale", "en-US".to_string()),
-        ("location_types", "airport".to_string()),
         ("limit", "15000".to_string()),
     ];
 
@@ -55,7 +66,7 @@ pub async fn fetch_airports(
         .await?
         .text()
         .await?;
-    let response: AirportsResponse = serde_json::from_str(&json_response)?;
+    let response: LocationsResponse = serde_json::from_str(&json_response)?;
 
     Ok(response)
 }
