@@ -1,5 +1,5 @@
-use reqwest::{Client, header};
 use reqwest::header::HeaderMap;
+use reqwest::{header, Client};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -37,7 +37,7 @@ pub async fn fetch_locations(
 
     let location_type = match location_type {
         LocationType::Airport => "airport".to_string(),
-        LocationType::Country => "country".to_string()
+        LocationType::Country => "country".to_string(),
     };
 
     let mut query_params = vec![

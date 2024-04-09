@@ -8,35 +8,38 @@ use crate::data_harvest::locations_api_client::{fetch_locations, LocationType};
 /// Harvests data from third party APIs and generates `.sql` files for it to be
 /// stored in the database.
 pub async fn run(settings: &Settings) {
-    let files_to_generate = vec![
-        "002_add_airports.sql",
-        "003_add_countries.sql",
-    ];
+    let files_to_generate = ["002_add_airports.sql", "003_add_countries.sql"];
 
     let existing_sql_files: Vec<String> = fs::read_dir("./migrations/")
         .unwrap()
-        .into_iter()
         .filter_map(|read_dir| read_dir.ok())
-        .filter_map(|dir_entry| get_name_if_sql(dir_entry))
+        .filter_map(get_name_if_sql)
         .collect();
 
-    let unexecuted = files_to_generate.iter()
+    let unexecuted = files_to_generate
+        .iter()
         .filter(|file| !existing_sql_files.contains(&file.to_string()))
         .collect::<Vec<&&str>>();
 
     for new_harvest in unexecuted {
-        match new_harvest {
-            &"002_add_airports.sql" => add_airports("./migrations/002_add_airports.sql", settings).await,
-            &"003_add_countries.sql" => add_countries("./migrations/003_add_countries.sql", settings).await,
-            _ => { panic!("No handler for {}", new_harvest) }
+        match *new_harvest {
+            "002_add_airports.sql" => {
+                add_airports("./migrations/002_add_airports.sql", settings).await
+            }
+            "003_add_countries.sql" => {
+                add_countries("./migrations/003_add_countries.sql", settings).await
+            }
+            _ => {
+                panic!("No handler for {}", new_harvest)
+            }
         }
     }
 }
 
 async fn add_locations(location_type: LocationType, sql_file_name: &str, settings: &Settings) {
     let table = match location_type {
-        LocationType::Airport => { "airports" }
-        LocationType::Country => { "countries" }
+        LocationType::Airport => "airports",
+        LocationType::Country => "countries",
     };
 
     let mut insert_query = format!("INSERT INTO {} VALUES ", table);
@@ -50,11 +53,11 @@ async fn add_locations(location_type: LocationType, sql_file_name: &str, setting
             .locations
             .into_iter()
             .map(|location| {
-                let escaped_name = location.name.replace("'", "''");
+                let escaped_name = location.name.replace('\'', "''");
                 format!("('{}', '{}')", location.code, escaped_name)
             })
             .collect::<Vec<_>>()
-            .join(", ");
+            .join(",\n");
         insert_query.push_str(&insert_response_query);
 
         if response.search_after.is_none() {
@@ -62,7 +65,7 @@ async fn add_locations(location_type: LocationType, sql_file_name: &str, setting
         }
         search_after = response.search_after;
     }
-    insert_query.push_str(";");
+    insert_query.push(';');
 
     File::create(sql_file_name)
         .unwrap()

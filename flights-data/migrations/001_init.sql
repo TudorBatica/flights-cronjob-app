@@ -17,25 +17,17 @@ CREATE TABLE countries
     name TEXT NOT NULL
 );
 
-CREATE TABLE routes
+CREATE TABLE monitored_routes
 (
-    PRIMARY KEY (airport_code, country_code),
-    airport_code TEXT,
-    country_code TEXT,
-    FOREIGN KEY (airport_code) REFERENCES airports (code) ON DELETE CASCADE,
-    FOREIGN KEY (country_code) REFERENCES countries (code) ON DELETE CASCADE
-);
-
-CREATE TABLE user_routes
-(
-    user_id      INTEGER,
+    monitored_by INTEGER,
     airport_code TEXT,
     country_code TEXT,
     budget       SMALLINT,
     trip_type    SMALLINT,
-    FOREIGN KEY (user_id) REFERENCES users (id),
-    FOREIGN KEY (airport_code, country_code) REFERENCES routes (airport_code, country_code) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, airport_code, country_code)
+    FOREIGN KEY (monitored_by) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (airport_code) REFERENCES airports (code) ON DELETE CASCADE,
+    FOREIGN KEY (country_code) REFERENCES countries (code) ON DELETE CASCADE,
+    PRIMARY KEY (monitored_by, airport_code, country_code)
 );
 
 CREATE TABLE trips
@@ -50,6 +42,7 @@ CREATE TABLE trips
     inserted_at  DATE,
     city_code    TEXT,
     city_name    TEXT,
-    FOREIGN KEY (airport_code, country_code) REFERENCES routes (airport_code, country_code) ON DELETE CASCADE
+    FOREIGN KEY (airport_code) REFERENCES airports (code) ON DELETE CASCADE,
+    FOREIGN KEY (country_code) REFERENCES countries (code) ON DELETE CASCADE
 );
 
