@@ -1,0 +1,2 @@
+app_port: 8000
+database_url: postgres://flights.user:flights.pass@localhost:5432/flights.db

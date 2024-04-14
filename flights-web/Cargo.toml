@@ -12,7 +12,15 @@ name = "flights-web"
 
 [dependencies]
 actix-web = "4.5.1"
+config.workspace = true
+dotenvy.workspace = true
+serde.workspace = true
 tokio.workspace = true
+
+[dependencies.sqlx]
+version = "0.7.4"
+default-features = false
+features = ["postgres", "uuid", "chrono", "macros", "runtime-tokio-native-tls"]
 
 [dev-dependencies]
 reqwest.workspace = true
