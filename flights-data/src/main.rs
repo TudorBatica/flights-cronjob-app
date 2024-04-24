@@ -20,7 +20,7 @@ async fn main() {
         "migrate" => {
             let pool = PgPoolOptions::new()
                 .max_connections(1)
-                .connect(&configuration.database.conn_string())
+                .connect(&configuration.database_url)
                 .await
                 .unwrap();
 

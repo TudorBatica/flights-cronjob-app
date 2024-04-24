@@ -1,8 +1,2 @@
-database:
-  host: "127.0.0.1"
-  port: 5432
-  username: ${FLIGHTS_DB_USER}
-  password: ${FLIGHTS_DB_PASS}
-  database_name: ${FLIGHTS_DB_NAME}
-
-kiwi_api_key: ${FLIGHTS_KIWI_API_KEY}
+database_url: postgres://flights.user:flights.pass@localhost:5432/flights.db
+kiwi_api_key: kiwi-tequila-api-key
