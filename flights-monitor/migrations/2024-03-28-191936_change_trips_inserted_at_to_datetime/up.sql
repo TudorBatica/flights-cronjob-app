@@ -1,2 +1,0 @@
-ALTER TABLE trips
-ALTER COLUMN inserted_at TYPE TIMESTAMP;

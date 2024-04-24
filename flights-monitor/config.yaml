@@ -1,0 +1,3 @@
+database_url: postgres://flights.user:flights.pass@localhost:5432/flights.db
+kiwi_api_key: kiwi-tequila-api-key
+monitored_period_length_days: 120

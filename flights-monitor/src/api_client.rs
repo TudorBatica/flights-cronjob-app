@@ -80,7 +80,7 @@ where
 
 pub async fn search_flights(
     api_key: &str,
-    query: FlightsQuery,
+    query: &FlightsQuery,
 ) -> Result<FlightsResponse, Box<dyn std::error::Error>> {
     let mut headers = HeaderMap::new();
     headers.insert("apikey", api_key.parse().unwrap());
@@ -95,8 +95,8 @@ pub async fn search_flights(
         .query(&[
             ("date_from", query.date_from.format("%d/%m/%Y").to_string()),
             ("date_to", query.date_to.format("%d/%m/%Y").to_string()),
-            ("fly_from", query.fly_from),
-            ("fly_to", query.fly_to),
+            ("fly_from", query.fly_from.clone()),
+            ("fly_to", query.fly_to.clone()),
             ("max_stopovers", query.max_stopovers.to_string()),
             ("nights_in_dst_from", query.nights_in_dst_from.to_string()),
             ("nights_in_dst_to", query.nights_in_dst_to.to_string()),

@@ -7,9 +7,15 @@ edition = "2021"
 
 [dependencies]
 chrono.workspace = true
-diesel = { version = "2.1.4", features = ["postgres", "chrono"] }
+config.workspace = true
 dotenvy = "0.15"
 reqwest.workspace = true
+sea-query.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
+
+[dependencies.sqlx]
+version = "0.7.4"
+default-features = false
+features = ["postgres", "uuid", "chrono", "macros", "runtime-tokio-native-tls"]
