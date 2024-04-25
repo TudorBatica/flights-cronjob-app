@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::result::Result;
 
-use chrono::{Datelike, DateTime, Days, Utc, Weekday};
+use chrono::{DateTime, Datelike, Days, Utc, Weekday};
 use sea_query::{Cond, Expr, Iden, PostgresQueryBuilder, Query};
 use sqlx::PgPool;
 
@@ -16,35 +16,51 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let pool = PgPool::connect(&configuration.database_url).await.unwrap();
     let start_time = Utc::now();
 
-    let monitored_routes = sqlx::query!("SELECT DISTINCT airport_code, country_code FROM monitored_routes;")
-        .fetch_all(&pool)
-        .await
-        .unwrap();
+    let monitored_routes =
+        sqlx::query!("SELECT DISTINCT airport_code, country_code FROM monitored_routes;")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
 
-    let date_to = Utc::now()
-        .checked_add_days(Days::new(configuration.monitored_period_length_days as u64))
-        .unwrap();
+    // todo: refactor performing multiple queries to kiwi by using config.yaml to tweak the scanned period of time;
+    // it is currently done like this: 20-80 days from now + 81-141 days from now
+    let date_from = Utc::now().checked_add_days(Days::new(20)).unwrap();
+    let date_to = Utc::now().checked_add_days(Days::new(80)).unwrap();
 
-    let flights_queries: Vec<FlightsQuery> = monitored_routes.iter()
-        .map(|route| {
-            FlightsQuery {
-                fly_from: route.airport_code.clone(),
-                fly_to: route.country_code.clone(),
-                date_from: Utc::now(),
-                date_to,
-                nights_in_dst_from: 2,
-                nights_in_dst_to: 7,
-                max_stopovers: 0,
-            }
-        }).collect();
-
+    let flights_queries: Vec<FlightsQuery> = monitored_routes
+        .iter()
+        .flat_map(|route| {
+            [
+                FlightsQuery {
+                    fly_from: route.airport_code.clone(),
+                    fly_to: route.country_code.clone(),
+                    date_from,
+                    date_to,
+                    nights_in_dst_from: 2,
+                    nights_in_dst_to: 7,
+                    max_stopovers: 0,
+                },
+                FlightsQuery {
+                    fly_from: route.airport_code.clone(),
+                    fly_to: route.country_code.clone(),
+                    date_from: date_from.checked_add_days(Days::new(61)).unwrap(),
+                    date_to: date_to.checked_add_days(Days::new(61)).unwrap(),
+                    nights_in_dst_from: 2,
+                    nights_in_dst_to: 7,
+                    max_stopovers: 0,
+                },
+            ]
+        })
+        .collect();
 
     for query in flights_queries {
         let new_trips = api_client::search_flights(&configuration.kiwi_api_key, &query).await;
         match new_trips {
             Ok(trips) => {
                 println!("Retrieved {} round-flights", trips.results);
-                let eligible_trips = trips.data.into_iter()
+                let eligible_trips = trips
+                    .data
+                    .into_iter()
                     .filter(|trip| is_week_long_trip(trip) || is_weekend_getaway(trip))
                     .collect();
                 insert_trips(&pool, eligible_trips).await
@@ -88,7 +104,8 @@ async fn insert_trips(pool: &PgPool, items: Vec<Trip>) {
             Trips::InsertedAt,
             Trips::CityCode,
             Trips::CityName,
-        ]).to_owned();
+        ])
+        .to_owned();
 
     for trip in items {
         query.values_panic(vec![
@@ -107,10 +124,9 @@ async fn insert_trips(pool: &PgPool, items: Vec<Trip>) {
 
     match sqlx::query(&query).execute(pool).await {
         Ok(_) => {}
-        Err(e) => println!("Encountered error {:?} when executing {}", e, query)
+        Err(e) => println!("Encountered error {:?} when executing {}", e, query),
     };
 }
-
 
 async fn delete_trips_inserted_before(pool: &PgPool, date_time: DateTime<Utc>) {
     let query = Query::delete()
@@ -120,12 +136,16 @@ async fn delete_trips_inserted_before(pool: &PgPool, date_time: DateTime<Utc>) {
 
     match sqlx::query(&query).execute(pool).await {
         Ok(_) => {}
-        Err(e) => println!("Encountered error {:?} when executing {}", e, query)
+        Err(e) => println!("Encountered error {:?} when executing {}", e, query),
     }
 }
 
 fn get_trip_type(trip: &Trip) -> u8 {
-    if is_weekend_getaway(trip) { 1 } else { 2 }
+    if is_weekend_getaway(trip) {
+        1
+    } else {
+        2
+    }
 }
 
 fn is_week_long_trip(trip: &Trip) -> bool {
@@ -135,7 +155,7 @@ fn is_week_long_trip(trip: &Trip) -> bool {
 fn is_weekend_getaway(trip: &Trip) -> bool {
     trip.length_in_nights <= 3
         && (trip.utc_departure().weekday() == Weekday::Fri
-        || trip.utc_departure().weekday() == Weekday::Sat)
+            || trip.utc_departure().weekday() == Weekday::Sat)
         && (trip.utc_return().weekday() == Weekday::Sun
-        || trip.utc_return().weekday() == Weekday::Mon)
+            || trip.utc_return().weekday() == Weekday::Mon)
 }
