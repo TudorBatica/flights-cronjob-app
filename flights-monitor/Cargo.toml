@@ -9,6 +9,7 @@ edition = "2021"
 chrono.workspace = true
 config.workspace = true
 dotenvy = "0.15"
+flights-data = { path = "../flights-data" }
 reqwest.workspace = true
 sea-query.workspace = true
 serde.workspace = true

@@ -2,7 +2,8 @@ use std::error::Error;
 use std::result::Result;
 
 use chrono::{DateTime, Datelike, Days, Utc, Weekday};
-use sea_query::{Cond, Expr, Iden, PostgresQueryBuilder, Query};
+use flights_data::db_schema::Trips;
+use sea_query::{Cond, Expr, PostgresQueryBuilder, Query};
 use sqlx::PgPool;
 
 use crate::api_client::{FlightsQuery, Trip};
@@ -73,22 +74,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     delete_trips_inserted_before(&pool, start_time).await;
     return Ok(());
-}
-
-//todo: move to flights-data
-#[derive(Iden)]
-pub enum Trips {
-    Table,
-    TripId,
-    AirportCode,
-    CountryCode,
-    DepartAt,
-    ReturnAt,
-    Price,
-    TripType,
-    InsertedAt,
-    CityCode,
-    CityName,
 }
 
 async fn insert_trips(pool: &PgPool, items: Vec<Trip>) {
