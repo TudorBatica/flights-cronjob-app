@@ -6,6 +6,38 @@
 </head>
 <body>
 <h1>Welcome, {{ user_name }}!</h1>
-<p>You are monitoring {{ routes_count }} routes!</p>
+{% block content %}
+<h2>Trips for you</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Airport Code</th>
+        <th>Country Code</th>
+        <th>Price</th>
+        <th>Depart At</th>
+        <th>Return At</th>
+        <th>Trip Type</th>
+        <th>Inserted At</th>
+        <th>City Code</th>
+        <th>City Name</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for trip in trips %}
+    <tr>
+        <td>{{ trip.airport_code }}</td>
+        <td>{{ trip.country_code }}</td>
+        <td>{{ trip.price }}</td>
+        <td>{{ trip.depart_at }}</td>
+        <td>{{ trip.return_at }}</td>
+        <td>{{ trip.trip_type }}</td>
+        <td>{{ trip.inserted_at }}</td>
+        <td>{{ trip.city_code }}</td>
+        <td>{{ trip.city_name }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
 </body>
 </html>
