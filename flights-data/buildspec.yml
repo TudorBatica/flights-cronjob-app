@@ -1,6 +1,6 @@
 version: 0.2
 
 phases:
-  test_phase:
+  build:
     commands:
       - echo this setup works!
