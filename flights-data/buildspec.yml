@@ -1,0 +1,6 @@
+version: 0.2
+
+phases:
+  test_phase:
+    commands:
+      - echo this setup works!
