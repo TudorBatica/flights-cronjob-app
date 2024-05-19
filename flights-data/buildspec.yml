@@ -1,6 +1,10 @@
 version: 0.2
 
 phases:
-  build:
+  pre_build:
     commands:
-      - echo this setup works!
+      - cd flights-data
+      - echo Running flights-data tests...
+      - cargo test
+      - echo Logging into ECR...
+      - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 339717088857.dkr.ecr.eu-north-1.amazonaws.com/ecr-repo
