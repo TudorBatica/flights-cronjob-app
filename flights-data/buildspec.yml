@@ -9,8 +9,8 @@ phases:
     commands:
       - echo Building Docker image...
       - docker build -t flights-data -f flights-data/Dockerfile .
-      - docker tag flights-data:latest 339717088857.dkr.ecr.eu-north-1.amazonaws.com/ecr-repo/flights-data:latest
+      - docker tag flights-data:latest 339717088857.dkr.ecr.eu-north-1.amazonaws.com/flights-data-ecr-repo:latest
   post_build:
     commands:
       - echo Pushing image to ECR...
-      - docker push 339717088857.dkr.ecr.eu-north-1.amazonaws.com/ecr-repo/flights-data:latest
+      - docker push 339717088857.dkr.ecr.eu-north-1.amazonaws.com/flights-data-ecr-repo:latest
