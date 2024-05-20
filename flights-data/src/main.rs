@@ -20,6 +20,9 @@ async fn main() {
             sqlx::migrate!().run(&pool).await.unwrap();
         }
         "harvest" => flights_data::data_harvest::executor::run(&configuration).await,
-        _ => panic!("Provided argument unknown: must be `migrate` or `harvest`"),
+        other => panic!(
+            "Provided argument unknown: must be `migrate` or `harvest`, but was {}",
+            other
+        ),
     }
 }
