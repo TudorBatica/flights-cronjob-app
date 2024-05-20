@@ -39,5 +39,4 @@ pub struct Trip {
     pub inserted_at: DateTime<Utc>,
     pub city_code: String,
     pub city_name: String,
-    // Add other fields that are being selected in the query
 }
