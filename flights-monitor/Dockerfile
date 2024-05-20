@@ -9,6 +9,5 @@ FROM ubuntu:jammy
 WORKDIR /usr/src/flights-monitor
 COPY --from=builder /usr/src/flights-app/target/release/flights-monitor .
 COPY --from=builder /usr/src/flights-app/flights-monitor/config.yaml .
-COPY --from=builder /usr/src/flights-app/flights-monitor/sqlx-data.json .
 ENTRYPOINT ["./flights-monitor"]
 
