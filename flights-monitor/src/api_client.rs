@@ -69,8 +69,8 @@ pub struct Country {
 }
 
 fn deserialize_date<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
-    where
-        D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     let date_str = String::deserialize(deserializer)?;
     DateTime::parse_from_rfc3339(&date_str)
@@ -102,7 +102,7 @@ pub async fn search_flights(
             ("nights_in_dst_to", query.nights_in_dst_to.to_string()),
             ("limit", 1000.to_string()),
             ("sort", "price".to_string()),
-        ])p
+        ])
         .headers(headers)
         .send()
         .await?;
@@ -111,7 +111,7 @@ pub async fn search_flights(
         println!("Received {} response from Kiwi Search!", response.status());
         panic!("Could not contact KIWI Search");
     }
-    
+
     let response: FlightsResponse = serde_json::from_str(&response.text().await?)?;
     Ok(response)
 }
