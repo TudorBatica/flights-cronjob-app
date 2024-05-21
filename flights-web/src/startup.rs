@@ -5,6 +5,8 @@ use sqlx::PgPool;
 use std::net::TcpListener;
 
 pub fn run(listener: TcpListener, db_pool: PgPool) -> std::io::Result<Server> {
+    println!("Starting flights-web {}...", listener.local_addr().unwrap());
+
     let db_pool = web::Data::new(db_pool);
 
     let server = HttpServer::new(move || {
