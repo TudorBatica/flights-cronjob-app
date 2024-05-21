@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO monitored_routes (airport_code, country_code, budget, trip_type, monitored_by)\n        VALUES ($1, $2,  $3, $4, $5)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int2",
+        "Int2",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8f7e97f8383b08ad6d86ee95afff5c7b7083759bac4fc18702c3e9098cf202f2"
+}
