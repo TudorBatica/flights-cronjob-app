@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging into ECR...
+      - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 339717088857.dkr.ecr.eu-north-1.amazonaws.com/ecr-repo
+  build:
+    commands:
+      - echo Building Docker image...
+      - docker build -t flights-web -f flights-web/Dockerfile .
+      - docker tag flights-web:latest 339717088857.dkr.ecr.eu-north-1.amazonaws.com/flights-web-ecr-repo:latest
+  post_build:
+    commands:
+      - echo Pushing image to ECR...
+      - docker push 339717088857.dkr.ecr.eu-north-1.amazonaws.com/flights-web-ecr-repo:latest
