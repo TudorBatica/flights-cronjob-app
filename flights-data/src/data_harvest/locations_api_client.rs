@@ -1,33 +1,131 @@
 use reqwest::header::HeaderMap;
 use reqwest::{header, Client};
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde_json::Value;
+use std::fmt;
 
 const BASE_URL: &str = "https://api.tequila.kiwi.com/locations/dump";
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct Location {
-    pub code: String,
+pub struct Continent {
+    pub id: String,
     pub name: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct LocationsResponse {
-    pub locations: Vec<Location>,
+pub struct Region {
+    pub id: String,
+    pub name: String,
+    pub continent: Option<Continent>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct Country {
+    pub id: String,
+    pub name: String,
+    pub region: Option<Region>,
+    pub continent: Option<Continent>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct Subdivision {
+    pub id: String,
+    pub name: String,
+    pub continent: Option<Continent>,
+    pub country: Option<Country>,
+    pub region: Option<Region>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct AutonomousTerritory {
+    pub id: String,
+    pub name: String,
+    pub continent: Option<Continent>,
+    pub country: Option<Country>,
+    pub region: Option<Region>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct City {
+    pub id: String,
+    pub name: String,
+    pub autonomous_territory: Option<AutonomousTerritory>,
+    pub country: Option<Country>,
+    pub continent: Option<Continent>,
+    pub subdivision: Option<Subdivision>,
+    pub region: Option<Region>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct Airport {
+    pub id: String,
+    pub name: String,
+    pub autonomous_territory: Option<AutonomousTerritory>,
+    pub country: Option<Country>,
+    pub continent: Option<Continent>,
+    pub subdivision: Option<Subdivision>,
+    pub region: Option<Region>,
+    pub city: Option<City>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct LocationResponse<T> {
+    pub locations: Vec<T>,
     pub search_after: Option<Vec<Value>>,
 }
 
 #[derive(Debug)]
 pub enum LocationType {
     Airport,
+    AutonomousTerritory,
+    City,
     Country,
+    Continent,
+    Subdivision,
+    Region,
 }
 
-pub async fn fetch_locations(
+impl fmt::Display for LocationType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = match self {
+            LocationType::Airport => "airport",
+            LocationType::Country => "country",
+            LocationType::AutonomousTerritory => "autonomous_territory",
+            LocationType::City => "city",
+            LocationType::Continent => "continent",
+            LocationType::Region => "region",
+            LocationType::Subdivision => "subdivision",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+pub async fn get_locations<T>(location_type: LocationType, api_key: &str) -> Vec<T>
+where
+    T: DeserializeOwned + Clone,
+{
+    let mut locations: Vec<T> = vec![];
+    let mut search_after = None;
+    loop {
+        let response = fetch_locations_from_api(&location_type, search_after, api_key)
+            .await
+            .unwrap();
+        let mut response: LocationResponse<T> = serde_json::from_str(&response).unwrap();
+        locations.append(&mut response.locations);
+        if let Some(search_pagination) = response.search_after {
+            search_after = Some(search_pagination);
+        } else {
+            return locations;
+        }
+    }
+}
+
+async fn fetch_locations_from_api(
     location_type: &LocationType,
     search_after: Option<Vec<Value>>,
     api_key: &str,
-) -> Result<LocationsResponse, Box<dyn std::error::Error>> {
+) -> Result<String, Box<dyn std::error::Error>> {
     let mut headers = HeaderMap::new();
     headers.insert("apikey", api_key.parse().unwrap());
     headers.insert(
@@ -35,13 +133,8 @@ pub async fn fetch_locations(
         header::HeaderValue::from_static("application/json"),
     );
 
-    let location_type = match location_type {
-        LocationType::Airport => "airport".to_string(),
-        LocationType::Country => "country".to_string(),
-    };
-
     let mut query_params = vec![
-        ("location_types", location_type),
+        ("location_types", location_type.to_string()),
         ("locale", "en-US".to_string()),
         ("limit", "15000".to_string()),
     ];
@@ -66,7 +159,6 @@ pub async fn fetch_locations(
         .await?
         .text()
         .await?;
-    let response: LocationsResponse = serde_json::from_str(&json_response)?;
 
-    Ok(response)
+    return Ok(json_response);
 }

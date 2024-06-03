@@ -1,85 +1,243 @@
-use std::fs;
-use std::fs::{DirEntry, File};
-use std::io::Write;
+use std::fs::DirEntry;
+
+use sea_query::{PostgresQueryBuilder, Query};
 
 use crate::configuration::Settings;
-use crate::data_harvest::locations_api_client::{fetch_locations, LocationType};
+use crate::data_harvest::locations_api_client;
+use crate::data_harvest::locations_api_client::{
+    Airport, AutonomousTerritory, City, Continent, Country, LocationType, Region, Subdivision,
+};
+use crate::db_schema::{LocationTypeEnum, Locations};
 
 /// Harvests data from third party APIs and generates `.sql` files for it to be
 /// stored in the database.
 pub async fn run(settings: &Settings) {
-    let files_to_generate = ["002_add_airports.sql", "003_add_countries.sql"];
-
-    let existing_sql_files: Vec<String> = fs::read_dir("./migrations/")
-        .unwrap()
-        .filter_map(|read_dir| read_dir.ok())
-        .filter_map(get_name_if_sql)
-        .collect();
-
-    let unexecuted = files_to_generate
-        .iter()
-        .filter(|file| !existing_sql_files.contains(&file.to_string()))
-        .collect::<Vec<&&str>>();
-
-    for new_harvest in unexecuted {
-        match *new_harvest {
-            "002_add_airports.sql" => {
-                add_airports("./migrations/002_add_airports.sql", settings).await
-            }
-            "003_add_countries.sql" => {
-                add_countries("./migrations/003_add_countries.sql", settings).await
-            }
-            _ => {
-                panic!("No handler for {}", new_harvest)
-            }
-        }
-    }
+    // println!("{}", build_insert_continents_query(&settings.kiwi_api_key).await);
+    // println!("{}", build_insert_regions_query(&settings.kiwi_api_key).await);
+    // println!("{}", build_insert_countries_query(&settings.kiwi_api_key).await);
+    // println!("{}", build_insert_autonomous_territories_query(&settings.kiwi_api_key).await);
+    // println!("{}", build_insert_subdivisions_query(&settings.kiwi_api_key).await);
+    // println!("{}", build_insert_cities_query(&settings.kiwi_api_key).await);
+    // println!("{}", build_insert_airports_query(&settings.kiwi_api_key).await);
 }
 
-async fn add_locations(location_type: LocationType, sql_file_name: &str, settings: &Settings) {
-    let table = match location_type {
-        LocationType::Airport => "airports",
-        LocationType::Country => "countries",
-    };
+async fn build_insert_continents_query(kiwi_api_key: &str) -> String {
+    let continents: Vec<Continent> =
+        locations_api_client::get_locations(LocationType::Continent, kiwi_api_key).await;
+    let mut query = Query::insert();
+    query.into_table(Locations::Table).columns(vec![
+        Locations::Id,
+        Locations::Name,
+        Locations::LocationType,
+    ]);
+    continents.into_iter().for_each(|continent| {
+        query.values_panic(vec![
+            continent.id.into(),
+            continent.name.into(),
+            LocationTypeEnum::Continent.to_string().into(),
+        ]);
+    });
 
-    let mut insert_query = format!("INSERT INTO {} VALUES ", table);
-    let mut search_after = None;
-    loop {
-        let response = fetch_locations(&location_type, search_after, &settings.kiwi_api_key)
-            .await
-            .unwrap();
-
-        let insert_response_query = response
-            .locations
-            .into_iter()
-            .map(|location| {
-                let escaped_name = location.name.replace('\'', "''");
-                format!("('{}', '{}')", location.code, escaped_name)
-            })
-            .collect::<Vec<_>>()
-            .join(",\n");
-        insert_query.push_str(&insert_response_query);
-
-        if response.search_after.is_none() {
-            break;
-        }
-        search_after = response.search_after;
-    }
-    insert_query.push(';');
-
-    File::create(sql_file_name)
-        .unwrap()
-        .write_all(insert_query.as_bytes())
-        .unwrap();
+    return query.to_string(PostgresQueryBuilder) + ";";
 }
 
-async fn add_airports(sql_file_name: &str, settings: &Settings) {
-    add_locations(LocationType::Airport, sql_file_name, settings).await;
+async fn build_insert_regions_query(kiwi_api_key: &str) -> String {
+    let regions: Vec<Region> =
+        locations_api_client::get_locations(LocationType::Region, kiwi_api_key).await;
+    let mut query = Query::insert();
+    query.into_table(Locations::Table).columns(vec![
+        Locations::Id,
+        Locations::Name,
+        Locations::ContinentId,
+        Locations::LocationType,
+    ]);
+    regions.into_iter().for_each(|region| {
+        query.values_panic(vec![
+            region.id.into(),
+            region.name.into(),
+            region.continent.map(|cont| cont.id).into(),
+            LocationTypeEnum::Region.to_string().into(),
+        ]);
+    });
+
+    return query.to_string(PostgresQueryBuilder) + ";";
 }
 
-async fn add_countries(sql_file_name: &str, settings: &Settings) {
-    add_locations(LocationType::Country, sql_file_name, settings).await;
+async fn build_insert_countries_query(kiwi_api_key: &str) -> String {
+    let countries: Vec<Country> =
+        locations_api_client::get_locations(LocationType::Country, kiwi_api_key).await;
+    let mut query = Query::insert();
+    query.into_table(Locations::Table).columns(vec![
+        Locations::Id,
+        Locations::Name,
+        Locations::ContinentId,
+        Locations::RegionId,
+        Locations::LocationType,
+    ]);
+    countries.into_iter().for_each(|country| {
+        query.values_panic(vec![
+            country.id.into(),
+            country.name.into(),
+            country.continent.map(|country| country.id).into(),
+            country.region.map(|region| region.id).into(),
+            LocationTypeEnum::Country.to_string().into(),
+        ]);
+    });
+
+    return query.to_string(PostgresQueryBuilder) + ";";
 }
+
+async fn build_insert_autonomous_territories_query(kiwi_api_key: &str) -> String {
+    let territories: Vec<AutonomousTerritory> =
+        locations_api_client::get_locations(LocationType::AutonomousTerritory, kiwi_api_key).await;
+    let mut query = Query::insert();
+    query.into_table(Locations::Table).columns(vec![
+        Locations::Id,
+        Locations::Name,
+        Locations::ContinentId,
+        Locations::RegionId,
+        Locations::CountryId,
+        Locations::LocationType,
+    ]);
+    territories.into_iter().for_each(|territory| {
+        query.values_panic(vec![
+            territory.id.into(),
+            territory.name.into(),
+            territory.continent.map(|cont| cont.id).into(),
+            territory.region.map(|reg| reg.id).into(),
+            territory.country.map(|country| country.id).into(),
+            LocationTypeEnum::AutonomousTerritory.to_string().into(),
+        ]);
+    });
+
+    return query.to_string(PostgresQueryBuilder) + ";";
+}
+
+async fn build_insert_subdivisions_query(kiwi_api_key: &str) -> String {
+    let subdivisions: Vec<Subdivision> =
+        locations_api_client::get_locations(LocationType::Subdivision, kiwi_api_key).await;
+    let mut query = Query::insert();
+    query.into_table(Locations::Table).columns(vec![
+        Locations::Id,
+        Locations::Name,
+        Locations::ContinentId,
+        Locations::RegionId,
+        Locations::CountryId,
+        Locations::LocationType,
+    ]);
+    subdivisions.into_iter().for_each(|subdv| {
+        query.values_panic(vec![
+            subdv.id.into(),
+            subdv.name.into(),
+            subdv.continent.map(|cont| cont.id).into(),
+            subdv.region.map(|region| region.id).into(),
+            subdv.country.map(|country| country.id).into(),
+            LocationTypeEnum::Subdivision.to_string().into(),
+        ]);
+    });
+
+    return query.to_string(PostgresQueryBuilder) + ";";
+}
+
+async fn build_insert_cities_query(kiwi_api_key: &str) -> String {
+    let cities: Vec<City> =
+        locations_api_client::get_locations(LocationType::City, kiwi_api_key).await;
+    let mut query = Query::insert();
+    query.into_table(Locations::Table).columns(vec![
+        Locations::Id,
+        Locations::Name,
+        Locations::ContinentId,
+        Locations::RegionId,
+        Locations::CountryId,
+        Locations::SubdivisionId,
+        Locations::LocationType,
+    ]);
+    cities.into_iter().for_each(|city| {
+        query.values_panic(vec![
+            city.id.into(),
+            city.name.into(),
+            city.continent.map(|cont| cont.id).into(),
+            city.region.map(|region| region.id).into(),
+            city.country
+                .map(|country| {
+                    // kiwi appears to be sending ZZ country code for cities with unknown/disputed country
+                    if country.id == "ZZ" {
+                        None
+                    } else {
+                        Some(country.id)
+                    }
+                })
+                .flatten()
+                .into(),
+            city.subdivision.map(|subdivision| subdivision.id).into(),
+            LocationTypeEnum::City.to_string().into(),
+        ]);
+    });
+
+    return query.to_string(PostgresQueryBuilder) + ";";
+}
+
+async fn build_insert_airports_query(kiwi_api_key: &str) -> String {
+    let airports: Vec<Airport> =
+        locations_api_client::get_locations(LocationType::Airport, kiwi_api_key).await;
+    let mut query = Query::insert();
+    query.into_table(Locations::Table).columns(vec![
+        Locations::Id,
+        Locations::Name,
+        Locations::ContinentId,
+        Locations::RegionId,
+        Locations::CountryId,
+        Locations::SubdivisionId,
+        Locations::CityId,
+        Locations::LocationType,
+    ]);
+    airports.into_iter().for_each(|airport| {
+        query.values_panic(vec![
+            airport.id.into(),
+            airport.name.into(),
+            airport
+                .city
+                .as_ref()
+                .map(|city| city.continent.as_ref().map(|cont| cont.id.as_ref()))
+                .flatten()
+                .into(),
+            airport
+                .city
+                .as_ref()
+                .map(|city| city.region.as_ref().map(|reg| reg.id.as_ref()))
+                .flatten()
+                .into(),
+            airport
+                .city
+                .as_ref()
+                .map(|city| {
+                    city.country.as_ref().map(|country| {
+                        // kiwi appears to be sending ZZ country code for cities with unknown/disputed country
+                        if country.id == "ZZ" {
+                            None
+                        } else {
+                            Some(country.id.as_ref())
+                        }
+                    })
+                })
+                .flatten()
+                .flatten()
+                .into(),
+            airport
+                .city
+                .as_ref()
+                .map(|city| city.subdivision.as_ref().map(|country| country.id.as_ref()))
+                .flatten()
+                .into(),
+            airport.city.as_ref().map(|city| city.id.as_ref()).into(),
+            LocationTypeEnum::Airport.to_string().into(),
+        ]);
+    });
+
+    return query.to_string(PostgresQueryBuilder) + ";";
+}
+
+async fn add_all_locations(sql_file_name: &str, settings: &Settings) {}
 
 fn get_name_if_sql(dir_entry: DirEntry) -> Option<String> {
     let is_file = dir_entry
