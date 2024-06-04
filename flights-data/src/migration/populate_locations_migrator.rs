@@ -1,24 +1,82 @@
-use std::fs::DirEntry;
+use std::fs::OpenOptions;
+use std::io::prelude::*;
 
+use async_trait::async_trait;
 use sea_query::{PostgresQueryBuilder, Query};
 
 use crate::configuration::Settings;
-use crate::data_harvest::locations_api_client;
-use crate::data_harvest::locations_api_client::{
+use crate::db_schema::{LocationTypeEnum, Locations};
+use crate::migration::executor::{Migration, MigrationConstructor};
+use crate::migration::locations_api_client;
+use crate::migration::locations_api_client::{
     Airport, AutonomousTerritory, City, Continent, Country, LocationType, Region, Subdivision,
 };
-use crate::db_schema::{LocationTypeEnum, Locations};
 
-/// Harvests data from third party APIs and generates `.sql` files for it to be
-/// stored in the database.
-pub async fn run(settings: &Settings) {
-    // println!("{}", build_insert_continents_query(&settings.kiwi_api_key).await);
-    // println!("{}", build_insert_regions_query(&settings.kiwi_api_key).await);
-    // println!("{}", build_insert_countries_query(&settings.kiwi_api_key).await);
-    // println!("{}", build_insert_autonomous_territories_query(&settings.kiwi_api_key).await);
-    // println!("{}", build_insert_subdivisions_query(&settings.kiwi_api_key).await);
-    // println!("{}", build_insert_cities_query(&settings.kiwi_api_key).await);
-    // println!("{}", build_insert_airports_query(&settings.kiwi_api_key).await);
+inventory::submit! {
+    MigrationConstructor(|| {
+        Box::new(PopulateLocationsMigration {})
+    })
+}
+
+pub struct PopulateLocationsMigration {}
+
+#[async_trait]
+impl Migration for PopulateLocationsMigration {
+    fn output_file_name(&self) -> &str {
+        "005_populate_locations_table.sql"
+    }
+
+    async fn run(&self, settings: &Settings) {
+        let mut file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .append(true)
+            .open(format!("./migrations/{}", self.output_file_name()))
+            .unwrap();
+
+        write!(
+            &mut file,
+            "{}",
+            build_insert_continents_query(&settings.kiwi_api_key).await
+        )
+        .unwrap();
+        write!(
+            &mut file,
+            "{}",
+            build_insert_regions_query(&settings.kiwi_api_key).await
+        )
+        .unwrap();
+        write!(
+            &mut file,
+            "{}",
+            build_insert_countries_query(&settings.kiwi_api_key).await
+        )
+        .unwrap();
+        write!(
+            &mut file,
+            "{}",
+            build_insert_autonomous_territories_query(&settings.kiwi_api_key).await
+        )
+        .unwrap();
+        write!(
+            &mut file,
+            "{}",
+            build_insert_subdivisions_query(&settings.kiwi_api_key).await
+        )
+        .unwrap();
+        write!(
+            &mut file,
+            "{}",
+            build_insert_cities_query(&settings.kiwi_api_key).await
+        )
+        .unwrap();
+        write!(
+            &mut file,
+            "{}",
+            build_insert_airports_query(&settings.kiwi_api_key).await
+        )
+        .unwrap();
+    }
 }
 
 async fn build_insert_continents_query(kiwi_api_key: &str) -> String {
@@ -38,7 +96,7 @@ async fn build_insert_continents_query(kiwi_api_key: &str) -> String {
         ]);
     });
 
-    return query.to_string(PostgresQueryBuilder) + ";";
+    return query.to_string(PostgresQueryBuilder) + ";\n";
 }
 
 async fn build_insert_regions_query(kiwi_api_key: &str) -> String {
@@ -60,7 +118,7 @@ async fn build_insert_regions_query(kiwi_api_key: &str) -> String {
         ]);
     });
 
-    return query.to_string(PostgresQueryBuilder) + ";";
+    return query.to_string(PostgresQueryBuilder) + ";\n";
 }
 
 async fn build_insert_countries_query(kiwi_api_key: &str) -> String {
@@ -84,7 +142,7 @@ async fn build_insert_countries_query(kiwi_api_key: &str) -> String {
         ]);
     });
 
-    return query.to_string(PostgresQueryBuilder) + ";";
+    return query.to_string(PostgresQueryBuilder) + ";\n";
 }
 
 async fn build_insert_autonomous_territories_query(kiwi_api_key: &str) -> String {
@@ -110,7 +168,7 @@ async fn build_insert_autonomous_territories_query(kiwi_api_key: &str) -> String
         ]);
     });
 
-    return query.to_string(PostgresQueryBuilder) + ";";
+    return query.to_string(PostgresQueryBuilder) + ";\n";
 }
 
 async fn build_insert_subdivisions_query(kiwi_api_key: &str) -> String {
@@ -136,7 +194,7 @@ async fn build_insert_subdivisions_query(kiwi_api_key: &str) -> String {
         ]);
     });
 
-    return query.to_string(PostgresQueryBuilder) + ";";
+    return query.to_string(PostgresQueryBuilder) + ";\n";
 }
 
 async fn build_insert_cities_query(kiwi_api_key: &str) -> String {
@@ -174,7 +232,7 @@ async fn build_insert_cities_query(kiwi_api_key: &str) -> String {
         ]);
     });
 
-    return query.to_string(PostgresQueryBuilder) + ";";
+    return query.to_string(PostgresQueryBuilder) + ";\n";
 }
 
 async fn build_insert_airports_query(kiwi_api_key: &str) -> String {
@@ -234,23 +292,5 @@ async fn build_insert_airports_query(kiwi_api_key: &str) -> String {
         ]);
     });
 
-    return query.to_string(PostgresQueryBuilder) + ";";
-}
-
-async fn add_all_locations(sql_file_name: &str, settings: &Settings) {}
-
-fn get_name_if_sql(dir_entry: DirEntry) -> Option<String> {
-    let is_file = dir_entry
-        .file_type()
-        .is_ok_and(|file_type| file_type.is_file());
-    let is_sql = dir_entry
-        .file_name()
-        .to_str()
-        .map_or(false, |name| String::from(name).ends_with(".sql"));
-
-    if is_file && is_sql {
-        dir_entry.file_name().to_str().map(|str| str.to_string())
-    } else {
-        None
-    }
+    return query.to_string(PostgresQueryBuilder) + ";\n";
 }
