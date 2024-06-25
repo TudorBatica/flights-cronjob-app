@@ -3,6 +3,7 @@ pub struct Settings {
     pub database_url: String,
     pub kiwi_api_key: String,
     pub monitored_period_length_days: u16,
+    pub hours_between_scans: i64,
 }
 
 pub fn get_configuration() -> Settings {

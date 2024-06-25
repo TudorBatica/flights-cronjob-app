@@ -20,3 +20,5 @@ CREATE TABLE trip_routes
     CONSTRAINT fk_monitored_trip_id FOREIGN KEY (monitored_trip_id) REFERENCES monitored_trips(id) ON DELETE CASCADE
 );
 CREATE INDEX idx_routes_monitored_trip_id ON trip_routes(monitored_trip_id);
+
+ALTER TABLE routes ALTER COLUMN last_scan DROP NOT NULL;

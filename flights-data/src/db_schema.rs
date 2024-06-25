@@ -81,3 +81,36 @@ pub struct Trip {
     pub city_code: String,
     pub city_name: String,
 }
+
+#[derive(Iden)]
+pub enum Routes {
+    Table,
+    All,
+    FromLocationId,
+    ToLocationId,
+    LastScan,
+}
+
+#[derive(sqlx::FromRow, Debug)]
+pub struct Route {
+    pub from_location_id: String,
+    pub to_location_id: String,
+    pub last_scan: Option<DateTime<Utc>>,
+}
+
+#[derive(Iden)]
+pub enum Itineraries {
+    Table,
+    Id,
+    FromAirportId,
+    ToAirportId,
+    Price,
+    ItineraryType,
+    BookingLink,
+    DepartureDepartAtUtc,
+    DepartureArriveAtUtc,
+    ReturnDepartAtUtc,
+    ReturnArriveAtUtc,
+    Stopovers,
+    InsertedAt,
+}

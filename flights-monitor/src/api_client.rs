@@ -30,15 +30,7 @@ pub struct Trip {
     pub fly_from: String,
     #[serde(rename = "flyTo")]
     pub fly_to: String,
-    #[serde(rename = "cityFrom")]
-    pub city_from: String,
-    #[serde(rename = "cityTo")]
-    pub city_to: String,
-    #[serde(rename = "cityCodeTo")]
-    pub city_code_to: String,
-    #[serde(rename = "countryTo")]
-    pub country_to: Country,
-    pub price: f64,
+    pub price: f32,
     pub route: Vec<TripRouteFlight>,
     #[serde(rename = "nightsInDest")]
     pub length_in_nights: usize,
@@ -60,6 +52,12 @@ pub struct TripRouteFlight {
     pub utc_arrival: DateTime<Utc>,
     #[serde(deserialize_with = "deserialize_date")]
     pub utc_departure: DateTime<Utc>,
+    pub airline: Option<String>,
+    pub flights_no: Option<u32>,
+    #[serde(rename = "flyFrom")]
+    pub fly_from: String,
+    #[serde(rename = "flyTo")]
+    pub fly_to: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
