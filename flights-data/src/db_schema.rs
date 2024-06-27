@@ -114,3 +114,16 @@ pub enum Itineraries {
     Stopovers,
     InsertedAt,
 }
+
+#[derive(Iden)]
+pub enum Flights {
+    Table,
+    Id,
+    ItineraryId,
+    FromAirportId,
+    ToAirportId,
+    DepartAtUtc,
+    ArriveAtUtc,
+    Airline,
+    FlightNumber,
+}

@@ -1,9 +1,9 @@
-use chrono::{Days, Duration, Utc};
+use chrono::{DateTime, Days, Duration, Utc};
 use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sqlx::{Pool, Postgres, Row};
 
 use flights_data::db_schema::Itineraries::ItineraryType;
-use flights_data::db_schema::{Itineraries, Route, Routes};
+use flights_data::db_schema::{Flights, Itineraries, Route, Routes};
 
 use crate::api_client;
 use crate::api_client::{FlightsQuery, Trip};
@@ -11,9 +11,15 @@ use crate::configuration::Settings;
 
 pub async fn run(config: &Settings, pool: &Pool<Postgres>) {
     let routes = fetch_routes_to_scan(config, pool).await;
+    let now = Utc::now();
     for route in routes {
+        println!(
+            "Finding new itineraries for {}-{}",
+            route.from_location_id, route.to_location_id
+        );
         store_new_itineraries(route, config, pool).await;
     }
+    delete_itineraries_before(now, pool).await;
 }
 
 async fn fetch_routes_to_scan(config: &Settings, pool: &Pool<Postgres>) -> Vec<Route> {
@@ -49,23 +55,21 @@ async fn store_new_itineraries(route: Route, config: &Settings, pool: &Pool<Post
         },
     )
     .await;
-    match response {
-        Ok(response) => {
-            for trip in response.data {
-                store_itinerary_and_flights(trip, pool).await;
-            }
-        }
-        Err(err) => {
-            println!(
-                "Could not fetch flights from KIWI for route {:?} {:?}",
-                route, err
-            );
-            return;
-        }
+    if let Err(err) = response {
+        println!(
+            "Could not fetch flights from KIWI for route {:?} {:?}",
+            route, err
+        );
+        return;
+    }
+    let response = response.unwrap();
+    for itinerary in response.data {
+        let itinerary_id = store_itinerary(&itinerary, pool).await;
+        store_flights(itinerary, pool, itinerary_id).await;
     }
 }
 
-async fn store_itinerary_and_flights(trip: Trip, pool: &Pool<Postgres>) {
+async fn store_itinerary(trip: &Trip, pool: &Pool<Postgres>) -> i32 {
     let departure_flight = trip
         .route
         .iter()
@@ -92,10 +96,10 @@ async fn store_itinerary_and_flights(trip: Trip, pool: &Pool<Postgres>) {
             ItineraryType,
         ])
         .values_panic([
-            trip.fly_from.into(),
-            trip.fly_to.into(),
+            trip.fly_from.clone().into(),
+            trip.fly_to.clone().into(),
             (trip.price as u16).into(),
-            trip.deep_link.into(),
+            trip.deep_link.clone().into(),
             departure_flight.utc_departure.to_rfc3339().into(),
             departure_flight.utc_arrival.to_rfc3339().into(),
             return_flight.utc_departure.to_rfc3339().into(),
@@ -107,12 +111,50 @@ async fn store_itinerary_and_flights(trip: Trip, pool: &Pool<Postgres>) {
         .returning_col(Itineraries::Id)
         .to_string(PostgresQueryBuilder);
 
-    let itinerary_id: i32 = sqlx::query(&insert_itinerary_query)
+    return sqlx::query(&insert_itinerary_query)
         .fetch_one(pool)
         .await
         .unwrap()
         .try_get("id")
         .unwrap();
-    // let insert_flights_query = Query::insert()
-    //     .into_table(Fli)
+}
+
+async fn store_flights(trip: Trip, pool: &Pool<Postgres>, itinerary_id: i32) {
+    let mut insert_query = Query::insert()
+        .into_table(Flights::Table)
+        .columns([
+            Flights::ItineraryId,
+            Flights::FromAirportId,
+            Flights::ToAirportId,
+            Flights::DepartAtUtc,
+            Flights::ArriveAtUtc,
+            Flights::Airline,
+            Flights::FlightNumber,
+        ])
+        .to_owned();
+
+    for flight in trip.route {
+        insert_query
+            .values_panic([
+                itinerary_id.into(),
+                flight.fly_from.into(),
+                flight.fly_to.into(),
+                flight.utc_departure.to_rfc3339().into(),
+                flight.utc_arrival.to_rfc3339().into(),
+                flight.airline.into(),
+                flight.flights_no.into(),
+            ])
+            .to_string(PostgresQueryBuilder);
+    }
+
+    let insert_query = insert_query.to_string(PostgresQueryBuilder);
+    let _ = sqlx::query(&insert_query).execute(pool).await;
+}
+
+async fn delete_itineraries_before(date_time: DateTime<Utc>, pool: &Pool<Postgres>) {
+    let delete_statement = Query::delete()
+        .from_table(Itineraries::Table)
+        .and_where(Expr::col(Itineraries::InsertedAt).lt(date_time.to_rfc3339()))
+        .to_string(PostgresQueryBuilder);
+    let _ = sqlx::query(&delete_statement).execute(pool).await;
 }
