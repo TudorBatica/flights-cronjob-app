@@ -125,34 +125,37 @@ async fn store_itinerary(trip: &Trip, pool: &Pool<Postgres>) -> i32 {
 }
 
 async fn store_flights(trip: Trip, pool: &Pool<Postgres>, itinerary_id: i32) {
-    let mut insert_query = Query::insert()
-        .into_table(Flights::Table)
-        .columns([
-            Flights::ItineraryId,
-            Flights::FromAirportId,
-            Flights::ToAirportId,
-            Flights::DepartAtUtc,
-            Flights::ArriveAtUtc,
-            Flights::Airline,
-            Flights::FlightNumber,
-        ])
-        .to_owned();
-
-    for flight in trip.route {
-        insert_query
-            .values_panic([
-                itinerary_id.into(),
-                flight.fly_from.into(),
-                flight.fly_to.into(),
-                flight.utc_departure.to_rfc3339().into(),
-                flight.utc_arrival.to_rfc3339().into(),
-                flight.airline.into(),
-                flight.flight_no.into(),
+    let insert_query = {
+        let mut insert_statement = Query::insert()
+            .into_table(Flights::Table)
+            .columns([
+                Flights::ItineraryId,
+                Flights::FromAirportId,
+                Flights::ToAirportId,
+                Flights::DepartAtUtc,
+                Flights::ArriveAtUtc,
+                Flights::Airline,
+                Flights::FlightNumber,
             ])
-            .to_string(PostgresQueryBuilder);
-    }
+            .to_owned();
 
-    let insert_query = insert_query.to_string(PostgresQueryBuilder);
+        for flight in trip.route {
+            insert_statement
+                .values_panic([
+                    itinerary_id.into(),
+                    flight.fly_from.into(),
+                    flight.fly_to.into(),
+                    flight.utc_departure.to_rfc3339().into(),
+                    flight.utc_arrival.to_rfc3339().into(),
+                    flight.airline.into(),
+                    flight.flight_no.into(),
+                ])
+                .to_string(PostgresQueryBuilder);
+        }
+
+        insert_statement.to_string(PostgresQueryBuilder)
+    };
+
     let _ = sqlx::query(&insert_query).execute(pool).await;
 }
 
