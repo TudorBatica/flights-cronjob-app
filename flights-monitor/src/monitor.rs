@@ -12,14 +12,19 @@ use crate::configuration::Settings;
 pub async fn run(config: &Settings, pool: &Pool<Postgres>) {
     let routes = fetch_routes_to_scan(config, pool).await;
     let now = Utc::now();
-    for route in routes {
+    for route in &routes {
         println!(
             "Finding new itineraries for {}-{}",
             route.from_location_id, route.to_location_id
         );
         store_new_itineraries(route, config, pool).await;
     }
+
+    println!("Deleting outdated itineraries");
     delete_itineraries_before(now, pool).await;
+
+    println!("Updating last scan date for all updated routes");
+    update_routes_last_scan_date(routes, now, pool).await;
 }
 
 async fn fetch_routes_to_scan(config: &Settings, pool: &Pool<Postgres>) -> Vec<Route> {
@@ -41,7 +46,7 @@ async fn fetch_routes_to_scan(config: &Settings, pool: &Pool<Postgres>) -> Vec<R
     return sqlx::query_as(&query).fetch_all(pool).await.unwrap();
 }
 
-async fn store_new_itineraries(route: Route, config: &Settings, pool: &Pool<Postgres>) {
+async fn store_new_itineraries(route: &Route, config: &Settings, pool: &Pool<Postgres>) {
     let response = api_client::search_flights(
         &config.kiwi_api_key,
         &FlightsQuery {
@@ -142,7 +147,7 @@ async fn store_flights(trip: Trip, pool: &Pool<Postgres>, itinerary_id: i32) {
                 flight.utc_departure.to_rfc3339().into(),
                 flight.utc_arrival.to_rfc3339().into(),
                 flight.airline.into(),
-                flight.flights_no.into(),
+                flight.flight_no.into(),
             ])
             .to_string(PostgresQueryBuilder);
     }
@@ -157,4 +162,27 @@ async fn delete_itineraries_before(date_time: DateTime<Utc>, pool: &Pool<Postgre
         .and_where(Expr::col(Itineraries::InsertedAt).lt(date_time.to_rfc3339()))
         .to_string(PostgresQueryBuilder);
     let _ = sqlx::query(&delete_statement).execute(pool).await;
+}
+
+async fn update_routes_last_scan_date(
+    routes: Vec<Route>,
+    date_time: DateTime<Utc>,
+    pool: &Pool<Postgres>,
+) {
+    let routes: Vec<(&String, &String)> = routes
+        .iter()
+        .map(|r| (&r.from_location_id, &r.to_location_id))
+        .collect();
+    let update_statement = Query::update()
+        .table(Routes::Table)
+        .values([(Routes::LastScan, date_time.to_rfc3339().into())])
+        .and_where(
+            Expr::tuple([
+                Expr::col(Routes::FromLocationId).into(),
+                Expr::col(Routes::ToLocationId).into(),
+            ])
+            .in_tuples(routes),
+        )
+        .to_string(PostgresQueryBuilder);
+    let _ = sqlx::query(&update_statement).execute(pool).await;
 }

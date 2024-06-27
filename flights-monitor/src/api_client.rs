@@ -53,7 +53,7 @@ pub struct TripRouteFlight {
     #[serde(deserialize_with = "deserialize_date")]
     pub utc_departure: DateTime<Utc>,
     pub airline: Option<String>,
-    pub flights_no: Option<u32>,
+    pub flight_no: Option<u32>,
     #[serde(rename = "flyFrom")]
     pub fly_from: String,
     #[serde(rename = "flyTo")]
