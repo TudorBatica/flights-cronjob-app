@@ -91,7 +91,7 @@ pub enum Routes {
     LastScan,
 }
 
-#[derive(sqlx::FromRow, Debug)]
+#[derive(sqlx::FromRow, Debug, serde::Deserialize)]
 pub struct Route {
     pub from_location_id: String,
     pub to_location_id: String,

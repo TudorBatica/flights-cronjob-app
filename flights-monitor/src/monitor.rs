@@ -11,6 +11,10 @@ use crate::configuration::Settings;
 
 pub async fn run(config: &Settings, pool: &Pool<Postgres>) {
     let routes = fetch_routes_to_scan(config, pool).await;
+    run_for_routes(config, pool, routes).await;
+}
+
+pub async fn run_for_routes(config: &Settings, pool: &Pool<Postgres>, routes: Vec<Route>) {
     let now = Utc::now();
     for route in &routes {
         println!(
@@ -21,7 +25,7 @@ pub async fn run(config: &Settings, pool: &Pool<Postgres>) {
     }
 
     println!("Deleting outdated itineraries");
-    delete_itineraries_before(now, pool).await;
+    delete_itineraries_before(&routes, now, pool).await;
 
     println!("Updating last scan date for all updated routes");
     update_routes_last_scan_date(routes, now, pool).await;
@@ -159,9 +163,24 @@ async fn store_flights(trip: Trip, pool: &Pool<Postgres>, itinerary_id: i32) {
     let _ = sqlx::query(&insert_query).execute(pool).await;
 }
 
-async fn delete_itineraries_before(date_time: DateTime<Utc>, pool: &Pool<Postgres>) {
+async fn delete_itineraries_before(
+    routes: &Vec<Route>,
+    date_time: DateTime<Utc>,
+    pool: &Pool<Postgres>,
+) {
+    let routes: Vec<(&String, &String)> = routes
+        .iter()
+        .map(|r| (&r.from_location_id, &r.to_location_id))
+        .collect();
     let delete_statement = Query::delete()
         .from_table(Itineraries::Table)
+        .and_where(
+            Expr::tuple([
+                Expr::col(Itineraries::FromAirportId).into(),
+                Expr::col(Itineraries::ToAirportId).into(),
+            ])
+            .in_tuples(routes),
+        )
         .and_where(Expr::col(Itineraries::InsertedAt).lt(date_time.to_rfc3339()))
         .to_string(PostgresQueryBuilder);
     let _ = sqlx::query(&delete_statement).execute(pool).await;
