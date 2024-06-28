@@ -47,6 +47,12 @@ pub struct AutonomousTerritory {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+pub struct Location {
+    pub lat: f64,
+    pub lon: f64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct City {
     pub id: String,
     pub name: String,
@@ -55,6 +61,7 @@ pub struct City {
     pub continent: Option<Continent>,
     pub subdivision: Option<Subdivision>,
     pub region: Option<Region>,
+    pub location: Option<Location>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -67,6 +74,7 @@ pub struct Airport {
     pub subdivision: Option<Subdivision>,
     pub region: Option<Region>,
     pub city: Option<City>,
+    pub location: Location,
 }
 
 #[derive(Clone, Debug, Deserialize)]

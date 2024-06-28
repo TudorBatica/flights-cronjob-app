@@ -15,6 +15,8 @@ pub enum Locations {
     AutonomousId,
     CityId,
     LocationType,
+    Latitude,
+    Longitude,
 }
 
 pub enum LocationTypeEnum {
