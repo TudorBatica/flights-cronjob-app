@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Step Form</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://unpkg.com/htmx.org@1.7.0"></script>
+    <style>
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .option-button {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <form id="multi-step-form" hx-post="/submit-form" hx-encoding="multipart/form-data" hx-trigger="submit"
+          hx-target="#form-response">
+        <div id="step-1" class="step active">
+            <div class="form-group">
+                <label>Choose Start Point Type</label>
+                <div>
+                    <button type="button" class="btn btn-primary option-button" onclick="selectOption('city')">
+                        <i class="fas fa-city"></i> City or its surrounding area
+                    </button>
+                    <button type="button" class="btn btn-primary option-button" onclick="selectOption('country')">
+                        <i class="fas fa-globe"></i> Country or one of its subdivisions
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="step-2-city" class="step">
+            <div class="form-group">
+                <label for="city-name">City Name</label>
+                <input
+                        type="text"
+                        class="form-control"
+                        id="city-name"
+                        name="term"
+                        hx-get="/locations/city"
+                        hx-trigger="keyup changed delay:500ms"
+                        hx-target="#city-results"
+                        hx-params="term"
+                        required>
+                <div id="city-results"></div>
+            </div>
+            <div class="form-group">
+                <label for="city-radius">Radius around the city (km)</label>
+                <input type="range" class="form-control" id="city-radius" name="city_radius" min="0" max="500" step="10"
+                       value="100" oninput="document.getElementById('radius-value').textContent = this.value + ' km'">
+                <span id="radius-value">100 km</span>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="prevStep()">Previous</button>
+            <button type="button" class="btn btn-primary" onclick="nextStep(3)">Next</button>
+        </div>
+        <div id="step-2-country" class="step">
+            <div class="form-group">
+                <label for="country-name">Country Name</label>
+                <input type="text" class="form-control" id="country-name" name="country_name" hx-get="/search-country"
+                       hx-trigger="keyup changed delay:500ms" hx-target="#country-results" required>
+                <div id="country-results"></div>
+            </div>
+            <div class="form-group">
+                <label for="subdivision">Choose a subdivision</label>
+                <select class="form-control" id="subdivision" name="subdivision" hx-get="/get-subdivisions"
+                        hx-trigger="change" hx-target="#subdivision-results" required>
+                    <option value="">Select a country first</option>
+                </select>
+                <div id="subdivision-results"></div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="prevStep()">Previous</button>
+            <button type="button" class="btn btn-primary" onclick="nextStep(3)">Next</button>
+        </div>
+        <div id="step-3" class="step">
+            <div class="form-group">
+                <label for="destination-type">Destination Type</label>
+                <input type="text" class="form-control" id="destination-type" name="destination_type" required>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="prevStep()">Previous</button>
+            <button type="button" class="btn btn-primary" onclick="nextStep(4)">Next</button>
+        </div>
+        <div id="step-4" class="step">
+            <div class="form-group">
+                <label for="destination">Destination</label>
+                <input type="text" class="form-control" id="destination" name="destination" required>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="prevStep()">Previous</button>
+            <button type="submit" class="btn btn-success">Submit</button>
+        </div>
+    </form>
+    <div id="form-response"></div>
+</div>
+
+<script>
+    let selectedOption = '';
+
+    function selectOption(option) {
+        selectedOption = option;
+        document.querySelector('.step.active').classList.remove('active');
+        if (option === 'city') {
+            document.getElementById('step-2-city').classList.add('active');
+        } else {
+            document.getElementById('step-2-country').classList.add('active');
+        }
+    }
+
+    function nextStep(step) {
+        document.querySelector('.step.active').classList.remove('active');
+        document.getElementById('step-' + step).classList.add('active');
+    }
+
+    function prevStep() {
+        document.querySelector('.step.active').classList.remove('active');
+        document.getElementById('step-1').classList.add('active');
+    }
+
+    document.getElementById('country-name').addEventListener('input', function () {
+        // Logic to dynamically populate subdivisions dropdown based on the selected country
+        let country = this.value;
+        if (country) {
+            fetch(`/get-subdivisions?country=${country}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    let subdivisionSelect = document.getElementById('subdivision');
+                    subdivisionSelect.innerHTML = '';
+                    data.subdivisions.forEach(subdivision => {
+                        let option = document.createElement('option');
+                        option.value = subdivision;
+                        option.textContent = subdivision;
+                        subdivisionSelect.appendChild(option);
+                    });
+                });
+        }
+    });
+</script>
+</body>
+</html>

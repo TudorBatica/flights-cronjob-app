@@ -1,6 +1,7 @@
-use crate::routes;
+use crate::{api, routes};
+use actix_files::NamedFile;
 use actix_web::dev::Server;
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpRequest, HttpServer};
 use sqlx::PgPool;
 use std::net::TcpListener;
 
@@ -11,13 +12,17 @@ pub fn run(listener: TcpListener, db_pool: PgPool) -> std::io::Result<Server> {
 
     let server = HttpServer::new(move || {
         App::new()
+            .service(api::locations::fetch_cities)
             .route("/health", web::get().to(routes::health_check))
-            .route("/monitor", web::post().to(routes::monitor_routes))
-            .route("/trips", web::get().to(routes::trips))
+            .route("/new_trip", web::get().to(new_trip))
             .app_data(db_pool.clone())
     })
     .listen(listener)?
     .run();
 
     Ok(server)
+}
+
+async fn new_trip(_req: HttpRequest) -> actix_web::Result<NamedFile> {
+    Ok(NamedFile::open("./pages/new_trip.html")?)
 }

@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use sea_query::Iden;
+use serde::Deserialize;
 use std::fmt;
 
 #[derive(Iden)]
@@ -19,6 +20,7 @@ pub enum Locations {
     Longitude,
 }
 
+#[derive(Debug, Deserialize)]
 pub enum LocationTypeEnum {
     Airport,
     AutonomousTerritory,

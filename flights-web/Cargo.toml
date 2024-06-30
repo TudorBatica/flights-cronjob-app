@@ -11,6 +11,7 @@ path = "src/main.rs"
 name = "flights-web"
 
 [dependencies]
+actix-files = "0.6.6"
 actix-web = "4.5.1"
 askama = "0.12.1"
 config.workspace = true
