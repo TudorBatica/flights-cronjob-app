@@ -1,3 +1,4 @@
+use crate::routes::trips;
 use crate::{api, routes};
 use actix_files::NamedFile;
 use actix_web::dev::Server;
@@ -12,9 +13,14 @@ pub fn run(listener: TcpListener, db_pool: PgPool) -> std::io::Result<Server> {
 
     let server = HttpServer::new(move || {
         App::new()
-            .service(api::locations::fetch_cities)
             .route("/health", web::get().to(routes::health_check))
             .route("/new_trip", web::get().to(new_trip))
+            .service(api::locations::fetch_cities)
+            .service(api::locations::fetch_countries)
+            .service(api::locations::fetch_subdivisions)
+            .service(api::register_trip::register)
+            .service(actix_files::Files::new("/static", "./static").show_files_listing())
+            .route("/", web::get().to(trips))
             .app_data(db_pool.clone())
     })
     .listen(listener)?
@@ -24,5 +30,5 @@ pub fn run(listener: TcpListener, db_pool: PgPool) -> std::io::Result<Server> {
 }
 
 async fn new_trip(_req: HttpRequest) -> actix_web::Result<NamedFile> {
-    Ok(NamedFile::open("./pages/new_trip.html")?)
+    Ok(NamedFile::open("./static/new_trip.html")?)
 }

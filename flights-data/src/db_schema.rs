@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use sea_query::Iden;
 use serde::Deserialize;
 use std::fmt;
+use std::fmt::Write;
 
 #[derive(Iden)]
 pub enum Locations {
@@ -103,6 +104,14 @@ pub struct Route {
 }
 
 #[derive(Iden)]
+pub enum UserRoutes {
+    Table,
+    UserId,
+    FromLocationId,
+    ToLocationId,
+}
+
+#[derive(Iden)]
 pub enum Itineraries {
     Table,
     Id,
@@ -130,4 +139,20 @@ pub enum Flights {
     ArriveAtUtc,
     Airline,
     FlightNumber,
+}
+
+pub struct DistanceKmFunction;
+
+impl Iden for DistanceKmFunction {
+    fn unquoted(&self, s: &mut dyn Write) {
+        write!(s, "distance_km").unwrap();
+    }
+}
+
+#[derive(Iden)]
+pub enum MonitoredTrips {
+    Table,
+    Id,
+    UserId,
+    Name,
 }

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Destination Form</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+</head>
+<body>
+<section class="section">
+    <div class="container">
+        <h1 class="title">Flight Destination Form</h1>
+        <form id="flightForm">
+            <div id="step1" class="form-step">
+                <div class="field">
+                    <label class="label">Destination Type</label>
+                    <div class="control">
+                        <label class="radio">
+                            <input type="radio" name="destinationType" value="city">
+                            Fly to a city
+                        </label>
+                        <label class="radio">
+                            <input type="radio" name="destinationType" value="country">
+                            Fly to a country
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step2" class="form-step" style="display: none;">
+                <div id="citySection" style="display: none;">
+                    <div class="field">
+                        <label class="label">City</label>
+                        <div class="control">
+                            <input class="input" type="search" id="cityInput" placeholder="Search for a city">
+                        </div>
+                    </div>
+                    <div id="cityResultsContainer" class="mt-2" style="display: none;">
+                        <div class="box">
+                            <aside class="menu">
+                                <ul id="cityResults" class="menu-list"
+                                    style="max-height: 200px; overflow-y: auto;"></ul>
+                            </aside>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Radius around the city (km): <span id="radiusValue">100</span></label>
+                        <div class="control">
+                            <input class="slider is-fullwidth" step="10" min="0" max="500" value="100" type="range"
+                                   id="radiusSlider">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="countrySection" style="display: none;">
+                    <div class="field">
+                        <label class="label">Country</label>
+                        <div class="control">
+                            <input class="input" type="search" id="countryInput" placeholder="Search for a country">
+                        </div>
+                    </div>
+                    <div id="countryResultsContainer" class="mt-2" style="display: none;">
+                        <div class="box">
+                            <aside class="menu">
+                                <ul id="countryResults" class="menu-list"
+                                    style="max-height: 200px; overflow-y: auto;"></ul>
+                            </aside>
+                        </div>
+                    </div>
+                    <div id="subdivisionsSection" style="display: none;">
+                        <label class="label">Subdivisions</label>
+                        <div id="subdivisionCheckboxes"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step3" class="form-step" style="display: none;">
+                <div id="departureSection">
+                    <div class="field">
+                        <label class="label">City</label>
+                        <div class="control">
+                            <input class="input" type="search" id="departureInput" placeholder="Search for a city">
+                        </div>
+                    </div>
+                    <div id="departureResultsContainer" class="mt-2" style="display: none;">
+                        <div class="box">
+                            <aside class="menu">
+                                <ul id="departureResults" class="menu-list"
+                                    style="max-height: 200px; overflow-y: auto;"></ul>
+                            </aside>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Radius around the city (km): <span
+                                id="departureRadiusValue">100</span></label>
+                        <div class="control">
+                            <input class="slider is-fullwidth" step="10" min="0" max="500" value="100" type="range"
+                                   id="departureRadiusSlider">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field mt-4">
+                <div class="control">
+                    <button type="button" class="button is-light" id="prevButton" style="display: none;">Previous
+                    </button>
+                    <button type="button" class="button is-primary" id="nextButton">Next</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<script src="/static/new_trip_form.js"></script>
+</body>
+</html>
