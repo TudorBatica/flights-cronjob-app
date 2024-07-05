@@ -104,11 +104,11 @@ pub struct Route {
 }
 
 #[derive(Iden)]
-pub enum UserRoutes {
+pub enum TripRoutes {
     Table,
-    UserId,
-    FromLocationId,
-    ToLocationId,
+    FromAirportId,
+    ToAirportId,
+    MonitoredTripId,
 }
 
 #[derive(Iden)]

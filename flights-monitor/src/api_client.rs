@@ -107,6 +107,7 @@ pub async fn search_flights(
 
     if !response.status().is_success() {
         println!("Received {} response from Kiwi Search!", response.status());
+        println!("{:?}", response.text().await);
         panic!("Could not contact KIWI Search");
     }
 

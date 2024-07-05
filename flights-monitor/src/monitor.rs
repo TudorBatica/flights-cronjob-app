@@ -2,7 +2,6 @@ use chrono::{DateTime, Days, Duration, Utc};
 use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sqlx::{Pool, Postgres, Row};
 
-use flights_data::db_schema::Itineraries::ItineraryType;
 use flights_data::db_schema::{Flights, Itineraries, Route, Routes};
 
 use crate::api_client;
@@ -102,7 +101,6 @@ async fn store_itinerary(trip: &Trip, pool: &Pool<Postgres>) -> i32 {
             Itineraries::ReturnArriveAtUtc,
             Itineraries::Stopovers,
             Itineraries::InsertedAt,
-            ItineraryType,
         ])
         .values_panic([
             trip.fly_from.clone().into(),
@@ -115,7 +113,6 @@ async fn store_itinerary(trip: &Trip, pool: &Pool<Postgres>) -> i32 {
             return_flight.utc_arrival.to_rfc3339().into(),
             (trip.route.len() - 2).to_string().into(),
             Utc::now().to_rfc3339().into(),
-            "weekly".into(),
         ])
         .returning_col(Itineraries::Id)
         .to_string(PostgresQueryBuilder);
