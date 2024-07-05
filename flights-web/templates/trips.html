@@ -2,42 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Trips</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Trip Listings</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 </head>
 <body>
-<h1>Welcome, {{ user_name }}!</h1>
-{% block content %}
-<h2>Trips for you</h2>
-<table>
-    <thead>
-    <tr>
-        <th>Airport Code</th>
-        <th>Country Code</th>
-        <th>Price</th>
-        <th>Depart At</th>
-        <th>Return At</th>
-        <th>Trip Type</th>
-        <th>Inserted At</th>
-        <th>City Code</th>
-        <th>City Name</th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for trip in trips %}
-    <tr>
-        <td>{{ trip.airport_code }}</td>
-        <td>{{ trip.country_code }}</td>
-        <td>{{ trip.price }}</td>
-        <td>{{ trip.depart_at }}</td>
-        <td>{{ trip.return_at }}</td>
-        <td>{{ trip.trip_type }}</td>
-        <td>{{ trip.inserted_at }}</td>
-        <td>{{ trip.city_code }}</td>
-        <td>{{ trip.city_name }}</td>
-    </tr>
-    {% endfor %}
-    </tbody>
-</table>
-{% endblock %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">Trip Listings</h1>
+        <div class="columns is-multiline">
+            {% for trip in trips %}
+            <div class="column is-12">
+                <a href="/trip/{{ trip.id }}" class="box">
+                    <article class="media">
+                        <div class="media-content">
+                            <div class="content">
+                                <div class="level">
+                                    <div class="level-left">
+                                        <div class="level-item">
+                                            <h4 class="title is-4">{{ trip.name }}</h4>
+                                        </div>
+                                    </div>
+                                    <div class="level-right">
+                                        <div class="level-item">
+                                            <p class="subtitle is-5">
+                                                Minimum Price: ${{ trip.min_price }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
 </body>
 </html>
