@@ -1,4 +1,4 @@
-use crate::routes::trips;
+use crate::routes::{get_trip_page, trips};
 use crate::{api, routes};
 use actix_files::NamedFile;
 use actix_web::dev::Server;
@@ -15,6 +15,7 @@ pub fn run(listener: TcpListener, db_pool: PgPool) -> std::io::Result<Server> {
         App::new()
             .route("/health", web::get().to(routes::health_check))
             .route("/new_trip", web::get().to(new_trip))
+            .route("/trip/{trip_id}", web::get().to(get_trip_page))
             .service(api::locations::fetch_cities)
             .service(api::locations::fetch_countries)
             .service(api::locations::fetch_subdivisions)

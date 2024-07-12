@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flight List</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <style>
+        .scrollable-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .filter-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="section">
+        <div class="columns">
+            <div class="column is-3">
+                <button class="button is-primary" id="nightsButton">Nights in Destination</button>
+                <div class="filter-menu" id="nightsMenu">
+                    <label>Min Nights: <input type="range" min="2" max="14" value="2" id="minNights"></label>
+                    <label>Max Nights: <input type="range" min="2" max="14" value="14" id="maxNights"></label>
+                    <button class="button is-light" id="nightsCancel">Cancel</button>
+                    <button class="button is-primary" id="nightsApply">Apply</button>
+                </div>
+            </div>
+            <div class="column is-3">
+                <button class="button is-primary" id="stopoversButton">Stopovers</button>
+                <div class="filter-menu" id="stopoversMenu">
+                    <label>
+                        <input type="radio" name="stopovers" value="true" checked> Allow Stopovers
+                    </label>
+                    <label>
+                        <input type="radio" name="stopovers" value="false"> No Stopovers
+                    </label>
+                    <button class="button is-light" id="stopoversCancel">Cancel</button>
+                    <button class="button is-primary" id="stopoversApply">Apply</button>
+                </div>
+            </div>
+        </div>
+        <div class="scrollable-list" id="itinerariesList">
+            {% for itinerary in itineraries %}
+            <div class="box">
+                <p>{{ itinerary.from_airport_id }} - {{ itinerary.to_airport_id }}</p>
+                <p>Departure: {{ itinerary.departure_depart_at_utc }}</p>
+                <p>Return: {{ itinerary.return_depart_at_utc }}</p>
+                <p>Price: {{ itinerary.price }}</p>
+                <p>Stopovers: {{ itinerary.stopovers }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Toggle nights filter menu
+        document.getElementById('nightsButton').addEventListener('click', () => {
+            document.getElementById('nightsMenu').style.display = 'block';
+        });
+        document.getElementById('nightsCancel').addEventListener('click', () => {
+            document.getElementById('nightsMenu').style.display = 'none';
+        });
+        document.getElementById('nightsApply').addEventListener('click', () => {
+            const minNights = document.getElementById('minNights').value;
+            const maxNights = document.getElementById('maxNights').value;
+            applyFilters(minNights, maxNights, getStopovers());
+        });
+
+        // Toggle stopovers filter menu
+        document.getElementById('stopoversButton').addEventListener('click', () => {
+            document.getElementById('stopoversMenu').style.display = 'block';
+        });
+        document.getElementById('stopoversCancel').addEventListener('click', () => {
+            document.getElementById('stopoversMenu').style.display = 'none';
+        });
+        document.getElementById('stopoversApply').addEventListener('click', () => {
+            applyFilters(getMinNights(), getMaxNights(), getStopovers());
+        });
+
+        function getMinNights() {
+            return document.getElementById('minNights').value;
+        }
+
+        function getMaxNights() {
+            return document.getElementById('maxNights').value;
+        }
+
+        function getStopovers() {
+            return document.querySelector('input[name="stopovers"]:checked').value;
+        }
+
+        function applyFilters(minNights, maxNights, stopovers) {
+            const tripId = "{{ trip_id }}"; 
+            window.location.href = `/trip/${tripId}?min_nights=${minNights}&max_nights=${maxNights}&stopovers=${stopovers}`;
+        }
+    });
+</script>
+</body>
+</html>
