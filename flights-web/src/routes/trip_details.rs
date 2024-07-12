@@ -87,6 +87,10 @@ async fn get_itineraries(
         )
         .and_where(Expr::col((trip_routes.clone(), TripRoutes::MonitoredTripId)).eq(trip_id))
         .order_by((itineraries.clone(), Itineraries::Price), Order::Asc)
+        .order_by(
+            (itineraries.clone(), Itineraries::DepartureDepartAtUtc),
+            Order::Asc,
+        )
         .to_owned();
 
     if let Some(min_nights) = query.min_nights {
