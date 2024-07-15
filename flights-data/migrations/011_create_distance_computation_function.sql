@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION distance_km(
     lat1 float, lon1 float,
     lat2 float, lon2 float
-) RETURNS  AS $$
+) RETURNS integer AS $$
 DECLARE
     earth_radius_km float := 6371;
     dlat float;

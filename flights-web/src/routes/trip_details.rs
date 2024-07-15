@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use actix_web::{web, HttpResponse, Responder};
 use askama::Template;
-use sea_query::{Alias, Expr, JoinType, Order, PostgresQueryBuilder, Query};
+use sea_query::{Alias, Expr, Func, JoinType, Order, PostgresQueryBuilder, Query};
 use serde::Deserialize;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::PgPool;
@@ -24,6 +24,7 @@ struct ItineraryListing {
     return_depart_at_utc: DateTime<Utc>,
     price: i16,
     stopovers: i16,
+    over_wk: bool,
 }
 
 #[derive(Deserialize)]
@@ -73,6 +74,13 @@ async fn get_itineraries(
             (itineraries.clone(), Itineraries::Price),
             (itineraries.clone(), Itineraries::Stopovers),
         ])
+        .expr_as(
+            Func::cust(flights_data::db_schema::OverWeekendFunction).args([
+                Expr::col((itineraries.clone(), Itineraries::DepartureArriveAtUtc)).into(),
+                Expr::col((itineraries.clone(), Itineraries::ReturnDepartAtUtc)).into(),
+            ]),
+            Alias::new("over_wk"),
+        )
         .from_as(TripRoutes::Table, trip_routes.clone())
         .join_as(
             JoinType::InnerJoin,

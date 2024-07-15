@@ -149,6 +149,14 @@ impl Iden for DistanceKmFunction {
     }
 }
 
+pub struct OverWeekendFunction;
+
+impl Iden for crate::db_schema::OverWeekendFunction {
+    fn unquoted(&self, s: &mut dyn Write) {
+        write!(s, "over_weekend").unwrap();
+    }
+}
+
 #[derive(Iden)]
 pub enum MonitoredTrips {
     Table,

@@ -55,6 +55,7 @@
                 <p>Return: {{ itinerary.return_depart_at_utc }}</p>
                 <p>Price: {{ itinerary.price }}</p>
                 <p>Stopovers: {{ itinerary.stopovers }}</p>
+                <p>Over weekend: {{ itinerary.over_wk }}</p>
             </div>
             {% endfor %}
         </div>
@@ -99,7 +100,7 @@
         }
 
         function applyFilters(minNights, maxNights, stopovers) {
-            const tripId = "{{ trip_id }}"; 
+            const tripId = "{{ trip_id }}";
             window.location.href = `/trip/${tripId}?min_nights=${minNights}&max_nights=${maxNights}&stopovers=${stopovers}`;
         }
     });
